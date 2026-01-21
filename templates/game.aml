@@ -1,1 +1,5 @@
-canvas [width: attributes.width, height: attributes.height]
+zstack
+	if !state.playing
+		position [placement: "absolute", top: attributes.height / 2 + 2, left: attributes.width / 2]
+			@BBButton (click->begin) [label: "Begin"]
+	canvas [width: attributes.width, height: attributes.height]
