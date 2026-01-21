@@ -40,6 +40,20 @@ impl Component for App {
             state.scene.set(game_scene.into());
         }
     }
+
+    fn on_mount(
+        &mut self,
+        state: &mut Self::State,
+        mut _children: anathema::component::Children<'_, '_>,
+        context: anathema::component::Context<'_, '_, Self::State>,
+    ) {
+        let viewport = context.viewport.size();
+        let width = viewport.width;
+        let height = viewport.height;
+
+        state.width.set(width);
+        state.height.set(height);
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -73,6 +87,8 @@ pub struct AppState {
     score: Value<u32>,
     high_score: Value<u32>,
     level: Value<u8>,
+    width: Value<u16>,
+    height: Value<u16>,
 }
 
 impl Default for AppState {
@@ -82,6 +98,8 @@ impl Default for AppState {
             score: Value::default(),
             high_score: Value::default(),
             level: Value::default(),
+            width: Value::default(),
+            height: Value::default(),
         }
     }
 }

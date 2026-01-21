@@ -1,7 +1,8 @@
 mod app;
+mod game;
 mod scenes;
 
-use crate::app::App;
+use crate::{app::App, game::Game};
 use anathema::{
     prelude::{Backend, Document, TuiBackend},
     runtime::Runtime,
@@ -25,6 +26,7 @@ pub fn run() -> eyre::Result<()> {
     bb_anathema_components::register_all(&mut builder)?;
     App::register_to(&mut builder)?;
     scenes::register_scenes(&mut builder)?;
+    Game::register_to(&mut builder)?;
 
     builder
         .finish(&mut backend, |runtime, backend| runtime.run(backend))
