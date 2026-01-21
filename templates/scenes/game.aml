@@ -1,1 +1,11 @@
-text "game"
+vstack
+	border [sides: "bottom"]
+		expand [axis: "horz"]
+			hstack
+				text "Anathema Breakout"
+				spacer
+				text "score: "
+				text attributes.score
+				text " "
+				text "high_score: "
+				text attributes.high_score
