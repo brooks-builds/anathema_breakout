@@ -1,0 +1,19 @@
+vstack
+	@BBHeading [text: "Game Over", padding_top: 2, padding_bottom: 2]
+	hstack
+		spacer
+		hstack
+			text "Score: "
+			text attributes.score
+		spacer
+	hstack
+		spacer
+		hstack
+			text "High Score: "
+			text attributes.high_score
+		spacer
+	padding [top: 2]
+		hstack
+			spacer
+			@BBButton (click->back_to_start) [label: "Back to Start"]
+			spacer

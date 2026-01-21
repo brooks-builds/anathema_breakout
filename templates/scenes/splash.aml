@@ -1,0 +1,6 @@
+vstack
+	@BBHeading [text: "Anathema Breakout", padding_top: 2, padding_bottom: 2]
+	hstack
+		spacer
+		@BBButton (click->start_game) [label: "Start Game"]
+		spacer
