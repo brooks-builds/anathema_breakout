@@ -66,6 +66,19 @@ impl Component for Game {
             if ball.is_colliding_with(paddle) {
                 ball.velocity.y *= -1.0;
                 ball.position.y = paddle.position.y - 1.0;
+
+                let paddle_middle_x = paddle.position.x + paddle.size.x / 2.0;
+                let ball_middle_x = ball.position.x;
+                let offset = ball_middle_x - paddle_middle_x + 1.0;
+                let mut force = Vector::new(offset, 0.0);
+
+                force.normalize();
+                force.mult(self.0.speed);
+                ball.velocity.x = 0.0;
+                ball.apply_force(force);
+                self.0.speed += 0.1;
+
+                self.0.speed = self.0.speed.clamp(0.1, 1.0);
             }
 
             if ball.position.y > game_size.y {
@@ -115,14 +128,16 @@ impl Component for Game {
             let game_width = *state.game_width.to_ref() as f32;
             let game_height = *state.game_height.to_ref() as f32;
 
+            self.0.speed = 0.1;
+
             let ball_position = Vector::new(game_width / 2.0, game_height / 3.0);
-            let ball_velocity = Vector::new(0.0, 0.1);
+            let ball_velocity = Vector::new(0.0, self.0.speed);
             let ball_size = Vector::new(1.0, 1.0);
             let mut ball = Entity::new(ball_position, ball_size, '*');
             ball.apply_force(ball_velocity);
             self.0.ball = Some(ball);
 
-            let paddle_size = Vector::new(8.0, 2.0);
+            let paddle_size = Vector::new(7.0, 2.0);
             let paddle_position = Vector::new(
                 game_width / 2.0 - paddle_size.x / 2.0,
                 game_height - paddle_size.y,
@@ -176,4 +191,5 @@ impl Component for Game {
 pub struct GameEntities {
     ball: Option<Entity>,
     paddle: Option<Entity>,
+    speed: f32,
 }

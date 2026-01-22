@@ -14,6 +14,17 @@ impl Vector {
     pub fn new(x: f32, y: f32) -> Self {
         Self { x, y }
     }
+
+    pub fn normalize(&mut self) {
+        let length = self.x.powf(2.0) + self.y.powf(2.0);
+        self.x /= length;
+        self.y /= length;
+    }
+
+    pub fn mult(&mut self, scalar: f32) {
+        self.x *= scalar;
+        self.y *= scalar;
+    }
 }
 
 impl AddAssign for Vector {
