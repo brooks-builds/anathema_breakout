@@ -65,6 +65,11 @@ impl Component for Game {
 
             if ball.is_colliding_with(paddle) {
                 ball.velocity.y *= -1.0;
+                ball.position.y = paddle.position.y - 1.0;
+            }
+
+            if ball.position.y > game_size.y {
+                ball.is_alive = false;
             }
 
             ball.draw(canvas);
@@ -129,8 +134,41 @@ impl Component for Game {
         }
     }
 
-    fn accept_focus(&self) -> bool {
-        false
+    fn on_key(
+        &mut self,
+        key: anathema::component::KeyEvent,
+        _state: &mut Self::State,
+        mut _children: anathema::component::Children<'_, '_>,
+        mut _context: anathema::component::Context<'_, '_, Self::State>,
+    ) {
+        let Some(paddle) = &mut self.0.paddle else {
+            return;
+        };
+        let move_speed = 1.0;
+
+        if matches!(key.code, anathema::component::KeyCode::Left) {
+            let force = Vector::new(-move_speed, 0.0);
+            paddle.apply_force(force);
+        } else if matches!(key.code, anathema::component::KeyCode::Right) {
+            let force = Vector::new(move_speed, 0.0);
+            paddle.apply_force(force);
+        }
+    }
+
+    fn on_mouse(
+        &mut self,
+        mouse: anathema::component::MouseEvent,
+        _state: &mut Self::State,
+        mut _children: anathema::component::Children<'_, '_>,
+        mut _context: anathema::component::Context<'_, '_, Self::State>,
+    ) {
+        let Some(paddle) = &mut self.0.paddle else {
+            return;
+        };
+        let mouse_position = mouse.pos();
+
+        paddle.velocity.x = 0.0;
+        paddle.position.x = mouse_position.x as f32 - paddle.size.x / 2.0;
     }
 }
 

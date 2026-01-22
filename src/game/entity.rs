@@ -4,8 +4,8 @@ use crate::game::vector::Vector;
 
 #[derive(Debug)]
 pub struct Entity {
-    position: Vector,
-    size: Vector,
+    pub position: Vector,
+    pub size: Vector,
     character: char,
     pub velocity: Vector,
     pub is_alive: bool,
@@ -45,7 +45,6 @@ impl Entity {
     pub fn update(&mut self, game_size: Vector) {
         self.apply_velocity();
         self.bounce_off_walls(&game_size);
-        self.handle_off_screen(&game_size);
     }
 
     pub fn bounce_off_walls(&mut self, game_size: &Vector) {
@@ -60,12 +59,6 @@ impl Entity {
         if self.position.y <= 0.0 {
             self.position.y = 0.0;
             self.velocity.y *= -1.0;
-        }
-    }
-
-    pub fn handle_off_screen(&mut self, game_size: &Vector) {
-        if self.position.y > game_size.y {
-            self.is_alive = false;
         }
     }
 
