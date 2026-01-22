@@ -5,19 +5,17 @@ use crate::game::vector::Vector;
 #[derive(Debug)]
 pub struct Entity {
     position: Vector,
-    width: u16,
-    height: u16,
+    size: Vector,
     character: char,
-    velocity: Vector,
+    pub velocity: Vector,
     pub is_alive: bool,
 }
 
 impl Entity {
-    pub fn new(position: Vector, width: u16, height: u16, character: char) -> Self {
+    pub fn new(position: Vector, size: Vector, character: char) -> Self {
         Self {
             position,
-            width,
-            height,
+            size,
             character,
             velocity: Vector::zero(),
             is_alive: true,
@@ -25,7 +23,15 @@ impl Entity {
     }
 
     pub fn draw(&self, canvas: &mut Canvas) {
-        canvas.put(self.character, Style::new(), self.position.coords_as_i32());
+        for row in 0..self.size.x as i32 {
+            for col in 0..self.size.y as i32 {
+                canvas.put(
+                    self.character,
+                    Style::new(),
+                    (row + self.position.x as i32, col + self.position.y as i32),
+                );
+            }
+        }
     }
 
     pub fn apply_force(&mut self, force: Vector) {
@@ -61,5 +67,12 @@ impl Entity {
         if self.position.y > game_size.y {
             self.is_alive = false;
         }
+    }
+
+    pub fn is_colliding_with(&self, other: &Self) -> bool {
+        self.position.x < other.position.x + other.size.x
+            && self.position.x + self.size.x > other.position.x
+            && self.position.y < other.position.y + other.size.y
+            && self.position.y + self.size.y > other.position.y
     }
 }

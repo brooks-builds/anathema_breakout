@@ -14,10 +14,6 @@ impl Vector {
     pub fn new(x: f32, y: f32) -> Self {
         Self { x, y }
     }
-
-    pub fn coords_as_i32(&self) -> (i32, i32) {
-        (self.x as i32, self.y as i32)
-    }
 }
 
 impl AddAssign for Vector {

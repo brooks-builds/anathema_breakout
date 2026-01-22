@@ -55,15 +55,25 @@ impl Component for Game {
 
             canvas.clear();
 
-            if let Some(ball) = &mut self.0.ball {
-                ball.update(game_size);
-                ball.draw(canvas);
+            let Some(ball) = &mut self.0.ball else { return };
+            let Some(paddle) = &mut self.0.paddle else {
+                return;
+            };
 
-                if !ball.is_alive {
-                    self.0.ball = None;
-                    context.publish("lost_life", ());
-                    state.playing.set(false);
-                }
+            ball.update(game_size);
+            paddle.update(game_size);
+
+            if ball.is_colliding_with(paddle) {
+                ball.velocity.y *= -1.0;
+            }
+
+            ball.draw(canvas);
+            paddle.draw(canvas);
+
+            if !ball.is_alive {
+                self.0.ball = None;
+                context.publish("lost_life", ());
+                state.playing.set(false);
             }
         });
     }
@@ -97,15 +107,25 @@ impl Component for Game {
         mut _context: anathema::component::Context<'_, '_, Self::State>,
     ) {
         if event.name() == "begin" {
-            let ball_velocity = Vector::new(0.0, 4.1);
-            let game_width = *state.game_width.to_ref();
-            let game_height = *state.game_height.to_ref();
-            let position = Vector::from((game_width / 2, game_height / 3));
-            let mut ball = Entity::new(position, 1, 1, '*');
+            let game_width = *state.game_width.to_ref() as f32;
+            let game_height = *state.game_height.to_ref() as f32;
 
+            let ball_position = Vector::new(game_width / 2.0, game_height / 3.0);
+            let ball_velocity = Vector::new(0.0, 0.1);
+            let ball_size = Vector::new(1.0, 1.0);
+            let mut ball = Entity::new(ball_position, ball_size, '*');
             ball.apply_force(ball_velocity);
-            state.playing.set(true);
             self.0.ball = Some(ball);
+
+            let paddle_size = Vector::new(8.0, 2.0);
+            let paddle_position = Vector::new(
+                game_width / 2.0 - paddle_size.x / 2.0,
+                game_height - paddle_size.y,
+            );
+            let paddle = Entity::new(paddle_position, paddle_size, '=');
+            self.0.paddle = Some(paddle);
+
+            state.playing.set(true);
         }
     }
 
@@ -117,4 +137,5 @@ impl Component for Game {
 #[derive(Debug, Default)]
 pub struct GameEntities {
     ball: Option<Entity>,
+    paddle: Option<Entity>,
 }
