@@ -1,13 +1,16 @@
 mod entity;
 mod vector;
 
+use std::f32::consts::PI;
+
 use crate::game::{entity::Entity, vector::Vector};
 use anathema::{
     component::Component,
     default_widgets::Canvas,
-    state::{State, Value},
+    state::{Color, State, Value},
 };
 use bb_anathema_components::BBAppComponent;
+use rand::{rngs::ThreadRng, seq::IndexedRandom, thread_rng};
 
 #[derive(Debug, Default)]
 pub struct Game(GameEntities);
@@ -64,21 +67,32 @@ impl Component for Game {
             paddle.update(game_size);
 
             if ball.is_colliding_with(paddle) {
-                ball.velocity.y *= -1.0;
                 ball.position.y = paddle.position.y - 1.0;
 
-                let paddle_middle_x = paddle.position.x + paddle.size.x / 2.0;
-                let ball_middle_x = ball.position.x;
-                let offset = ball_middle_x - paddle_middle_x + 1.0;
-                let mut force = Vector::new(offset, 0.0);
+                let relative_intersect_x =
+                    (paddle.position.x + (paddle.size.x / 2.0)) - ball.position.x;
+                let normalized_relative_intersect_x = relative_intersect_x / (paddle.size.x / 2.0);
+                let angle = normalized_relative_intersect_x * (2.0 * PI / 12.0);
+                let new_velocity =
+                    Vector::new(self.0.speed * angle.cos(), self.0.speed * -angle.sin());
+                ball.velocity = new_velocity;
 
-                force.normalize();
-                force.mult(self.0.speed);
-                ball.velocity.x = 0.0;
-                ball.apply_force(force);
-                self.0.speed += 0.1;
+                self.0.speed += 0.01;
+                self.0.speed = self.0.speed.clamp(0.1, 2.0);
+            }
 
-                self.0.speed = self.0.speed.clamp(0.1, 1.0);
+            for brick in self.0.bricks.iter_mut() {
+                if ball.is_colliding_with(brick) {
+                    brick.health -= 1;
+
+                    if ball.position.y < brick.position.y + brick.size.y
+                        && ball.position.y > brick.position.y
+                    {
+                        ball.velocity.y *= -1.0;
+                    } else {
+                        ball.velocity.x *= -1.0;
+                    }
+                }
             }
 
             if ball.position.y > game_size.y {
@@ -88,11 +102,17 @@ impl Component for Game {
             ball.draw(canvas);
             paddle.draw(canvas);
 
+            for brick in self.0.bricks.iter() {
+                brick.draw(canvas);
+            }
+
             if !ball.is_alive {
                 self.0.ball = None;
                 context.publish("lost_life", ());
                 state.playing.set(false);
             }
+
+            self.0.bricks.retain(|brick| brick.health > 0);
         });
     }
 
@@ -128,12 +148,18 @@ impl Component for Game {
             let game_width = *state.game_width.to_ref() as f32;
             let game_height = *state.game_height.to_ref() as f32;
 
-            self.0.speed = 0.1;
+            self.0.speed = 0.5;
 
             let ball_position = Vector::new(game_width / 2.0, game_height / 3.0);
             let ball_velocity = Vector::new(0.0, self.0.speed);
             let ball_size = Vector::new(1.0, 1.0);
-            let mut ball = Entity::new(ball_position, ball_size, '*');
+            let mut ball = Entity::new(
+                ball_position,
+                ball_size,
+                '*',
+                anathema::state::Color::Reset,
+                1,
+            );
             ball.apply_force(ball_velocity);
             self.0.ball = Some(ball);
 
@@ -142,8 +168,41 @@ impl Component for Game {
                 game_width / 2.0 - paddle_size.x / 2.0,
                 game_height - paddle_size.y,
             );
-            let paddle = Entity::new(paddle_position, paddle_size, '=');
+            let paddle = Entity::new(
+                paddle_position,
+                paddle_size,
+                '=',
+                anathema::state::Color::Reset,
+                1,
+            );
             self.0.paddle = Some(paddle);
+
+            let bricks_per_row = 12.0;
+            let brick_size = Vector::new(game_width / bricks_per_row, 1.0);
+            let brick_character = ' ';
+            for count in 0..bricks_per_row as i32 {
+                let count = count as f32;
+                let position = Vector::new(count * brick_size.x, 0.0);
+                let (health, color) = (1, Color::Green);
+                let brick = Entity::new(position, brick_size, brick_character, color, health);
+                self.0.bricks.push(brick);
+            }
+
+            for count in 0..bricks_per_row as i32 {
+                let count = count as f32;
+                let position = Vector::new(count * brick_size.x, brick_size.y);
+                let (health, color) = (1, Color::Red);
+                let brick = Entity::new(position, brick_size, brick_character, color, health);
+                self.0.bricks.push(brick);
+            }
+
+            for count in 0..bricks_per_row as i32 {
+                let count = count as f32;
+                let position = Vector::new(count * brick_size.x, brick_size.y + 1.0);
+                let (health, color) = (1, Color::Blue);
+                let brick = Entity::new(position, brick_size, brick_character, color, health);
+                self.0.bricks.push(brick);
+            }
 
             state.playing.set(true);
         }
@@ -192,4 +251,22 @@ pub struct GameEntities {
     ball: Option<Entity>,
     paddle: Option<Entity>,
     speed: f32,
+    bricks: Vec<Entity>,
+}
+
+fn random_brick() -> (u8, Color) {
+    let mut rng = rand::rng();
+    let possible_colors = [
+        (1, Color::Red),
+        (2, Color::Green),
+        (3, Color::Yellow),
+        (4, Color::Blue),
+        (5, Color::Magenta),
+        (6, Color::Cyan),
+    ];
+
+    possible_colors
+        .choose(&mut rng)
+        .copied()
+        .expect("we have a color")
 }

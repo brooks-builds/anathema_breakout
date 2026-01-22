@@ -1,4 +1,4 @@
-use anathema::{default_widgets::Canvas, widgets::Style};
+use anathema::{default_widgets::Canvas, state::Color, widgets::Style};
 
 use crate::game::vector::Vector;
 
@@ -9,25 +9,39 @@ pub struct Entity {
     character: char,
     pub velocity: Vector,
     pub is_alive: bool,
+    pub bg_color: Color,
+    pub health: u8,
 }
 
 impl Entity {
-    pub fn new(position: Vector, size: Vector, character: char) -> Self {
+    pub fn new(
+        position: Vector,
+        size: Vector,
+        character: char,
+        bg_color: Color,
+        health: u8,
+    ) -> Self {
         Self {
             position,
             size,
             character,
             velocity: Vector::zero(),
             is_alive: true,
+            bg_color,
+            health,
         }
     }
 
     pub fn draw(&self, canvas: &mut Canvas) {
+        let mut style = Style::new();
+
+        style.set_bg(self.bg_color);
+
         for row in 0..self.size.x as i32 {
             for col in 0..self.size.y as i32 {
                 canvas.put(
                     self.character,
-                    Style::new(),
+                    style,
                     (row + self.position.x as i32, col + self.position.y as i32),
                 );
             }
@@ -68,4 +82,11 @@ impl Entity {
             && self.position.y < other.position.y + other.size.y
             && self.position.y + self.size.y > other.position.y
     }
+}
+
+enum Side {
+    Top,
+    Left,
+    Right,
+    Bottom,
 }
