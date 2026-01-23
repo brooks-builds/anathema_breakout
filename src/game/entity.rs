@@ -37,12 +37,12 @@ impl Entity {
 
         style.set_bg(self.bg_color);
 
-        for row in 0..self.size.x as i32 {
-            for col in 0..self.size.y as i32 {
+        for row in 0..self.size.x {
+            for col in 0..self.size.y {
                 canvas.put(
                     self.character,
                     style,
-                    (row + self.position.x as i32, col + self.position.y as i32),
+                    (row + self.position.x, col + self.position.y),
                 );
             }
         }
@@ -62,31 +62,28 @@ impl Entity {
     }
 
     pub fn bounce_off_walls(&mut self, game_size: &Vector) {
-        if self.position.x <= 0.0 {
-            self.position.x = 0.0;
-            self.velocity.x *= -1.0;
-        } else if self.position.x >= game_size.x - 1.0 {
-            self.position.x = game_size.x - 1.0;
-            self.velocity.x *= -1.0;
+        if self.position.x <= 0 {
+            self.position.x = 0;
+            self.velocity.x *= -1;
+        } else if self.position.x >= game_size.x - 1 {
+            self.position.x = game_size.x - 1;
+            self.velocity.x *= -1;
         }
 
-        if self.position.y <= 0.0 {
-            self.position.y = 0.0;
-            self.velocity.y *= -1.0;
+        if self.position.y <= 0 {
+            self.position.y = 0;
+            self.velocity.y *= -1;
         }
     }
 
-    pub fn is_colliding_with(&self, other: &Self) -> bool {
-        self.position.x < other.position.x + other.size.x
-            && self.position.x + self.size.x > other.position.x
-            && self.position.y < other.position.y + other.size.y
-            && self.position.y + self.size.y > other.position.y
+    pub fn is_point_inside(&self, point: &Vector) -> bool {
+        point.x >= self.position.x
+            && point.x < self.position.x + self.size.x
+            && point.y >= self.position.y
+            && point.y < self.position.y + self.size.y
     }
-}
 
-enum Side {
-    Top,
-    Left,
-    Right,
-    Bottom,
+    pub fn previous_location(&self) -> Vector {
+        self.position - self.velocity
+    }
 }

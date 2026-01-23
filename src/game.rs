@@ -1,8 +1,6 @@
 mod entity;
 mod vector;
 
-use std::f32::consts::PI;
-
 use crate::game::{entity::Entity, vector::Vector};
 use anathema::{
     component::Component,
@@ -10,7 +8,7 @@ use anathema::{
     state::{Color, State, Value},
 };
 use bb_anathema_components::BBAppComponent;
-use rand::{rngs::ThreadRng, seq::IndexedRandom, thread_rng};
+use rand::seq::IndexedRandom;
 
 #[derive(Debug, Default)]
 pub struct Game(GameEntities);
@@ -32,8 +30,8 @@ impl BBAppComponent for Game {
 
 #[derive(State, Debug, Default)]
 pub struct GameState {
-    game_width: Value<i64>,
-    game_height: Value<i64>,
+    game_width: Value<i32>,
+    game_height: Value<i32>,
     playing: Value<bool>,
 }
 
@@ -51,7 +49,7 @@ impl Component for Game {
     ) {
         let game_width = *state.game_width.to_ref();
         let game_height = *state.game_height.to_ref();
-        let game_size = Vector::from((game_width, game_height));
+        let game_size = Vector::new(game_width, game_height);
 
         children.elements().by_tag("canvas").first(|el, _| {
             let canvas = el.to::<Canvas>();
@@ -66,32 +64,35 @@ impl Component for Game {
             ball.update(game_size);
             paddle.update(game_size);
 
-            if ball.is_colliding_with(paddle) {
-                ball.position.y = paddle.position.y - 1.0;
-
-                let relative_intersect_x =
-                    (paddle.position.x + (paddle.size.x / 2.0)) - ball.position.x;
-                let normalized_relative_intersect_x = relative_intersect_x / (paddle.size.x / 2.0);
-                let angle = normalized_relative_intersect_x * (2.0 * PI / 12.0);
-                let new_velocity =
-                    Vector::new(self.0.speed * angle.cos(), self.0.speed * -angle.sin());
-                ball.velocity = new_velocity;
-
-                self.0.speed += 0.01;
-                self.0.speed = self.0.speed.clamp(0.1, 2.0);
+            if paddle.is_point_inside(&ball.position) {
+                ball.position.y = paddle.position.y - 1;
+                ball.velocity.y *= -1;
+                // am I on the left, center, or right sides
+                let shifted_ball = ball.position.x - (paddle.position.x + (paddle.size.x / 2));
+                ball.velocity.x = shifted_ball;
             }
 
             for brick in self.0.bricks.iter_mut() {
-                if ball.is_colliding_with(brick) {
+                if brick.is_point_inside(&ball.position) {
+                    let previous_ball_position = ball.previous_location();
+
                     brick.health -= 1;
 
-                    if ball.position.y < brick.position.y + brick.size.y
-                        && ball.position.y > brick.position.y
-                    {
-                        ball.velocity.y *= -1.0;
-                    } else {
-                        ball.velocity.x *= -1.0;
+                    if previous_ball_position.x < brick.position.x {
+                        ball.velocity.x *= -1;
+                        ball.position.x = brick.position.x - 1;
+                    } else if previous_ball_position.x > brick.position.x + brick.size.x - 1 {
+                        ball.velocity.x *= -1;
+                        ball.position.x = brick.position.x + brick.size.x
                     }
+
+                    if previous_ball_position.y < brick.position.y {
+                        ball.position.y = brick.position.y - 1;
+                    } else if previous_ball_position.y > brick.position.y + brick.size.y - 1 {
+                        ball.position.y = brick.position.y + brick.size.y;
+                    }
+
+                    ball.velocity.y *= -1;
                 }
             }
 
@@ -133,8 +134,8 @@ impl Component for Game {
             .to_int()
             .expect("height isn't a number");
 
-        state.game_width.set(width);
-        state.game_height.set(height);
+        state.game_width.set(width as i32);
+        state.game_height.set(height as i32);
     }
 
     fn on_event(
@@ -145,14 +146,11 @@ impl Component for Game {
         mut _context: anathema::component::Context<'_, '_, Self::State>,
     ) {
         if event.name() == "begin" {
-            let game_width = *state.game_width.to_ref() as f32;
-            let game_height = *state.game_height.to_ref() as f32;
-
-            self.0.speed = 0.5;
-
-            let ball_position = Vector::new(game_width / 2.0, game_height / 3.0);
-            let ball_velocity = Vector::new(0.0, self.0.speed);
-            let ball_size = Vector::new(1.0, 1.0);
+            let game_width = *state.game_width.to_ref();
+            let game_height = *state.game_height.to_ref();
+            let ball_position = Vector::new(game_width / 2, game_height / 2);
+            let ball_velocity = Vector::new(0, 1);
+            let ball_size = Vector::new(1, 1);
             let mut ball = Entity::new(
                 ball_position,
                 ball_size,
@@ -163,9 +161,9 @@ impl Component for Game {
             ball.apply_force(ball_velocity);
             self.0.ball = Some(ball);
 
-            let paddle_size = Vector::new(7.0, 2.0);
+            let paddle_size = Vector::new(7, 2);
             let paddle_position = Vector::new(
-                game_width / 2.0 - paddle_size.x / 2.0,
+                game_width / 2 - paddle_size.x / 2,
                 game_height - paddle_size.y,
             );
             let paddle = Entity::new(
@@ -177,29 +175,26 @@ impl Component for Game {
             );
             self.0.paddle = Some(paddle);
 
-            let bricks_per_row = 12.0;
-            let brick_size = Vector::new(game_width / bricks_per_row, 1.0);
+            let bricks_per_row = 12;
+            let brick_size = Vector::new(game_width / bricks_per_row, 1);
             let brick_character = ' ';
-            for count in 0..bricks_per_row as i32 {
-                let count = count as f32;
-                let position = Vector::new(count * brick_size.x, 0.0);
-                let (health, color) = (1, Color::Green);
+            for count in 0..bricks_per_row {
+                let position = Vector::new(count * brick_size.x, 0);
+                let (health, color) = random_brick();
                 let brick = Entity::new(position, brick_size, brick_character, color, health);
                 self.0.bricks.push(brick);
             }
 
-            for count in 0..bricks_per_row as i32 {
-                let count = count as f32;
+            for count in 0..bricks_per_row {
                 let position = Vector::new(count * brick_size.x, brick_size.y);
-                let (health, color) = (1, Color::Red);
+                let (health, color) = random_brick();
                 let brick = Entity::new(position, brick_size, brick_character, color, health);
                 self.0.bricks.push(brick);
             }
 
-            for count in 0..bricks_per_row as i32 {
-                let count = count as f32;
-                let position = Vector::new(count * brick_size.x, brick_size.y + 1.0);
-                let (health, color) = (1, Color::Blue);
+            for count in 0..bricks_per_row {
+                let position = Vector::new(count * brick_size.x, brick_size.y + 1);
+                let (health, color) = random_brick();
                 let brick = Entity::new(position, brick_size, brick_character, color, health);
                 self.0.bricks.push(brick);
             }
@@ -218,13 +213,13 @@ impl Component for Game {
         let Some(paddle) = &mut self.0.paddle else {
             return;
         };
-        let move_speed = 1.0;
+        let move_speed = 1;
 
         if matches!(key.code, anathema::component::KeyCode::Left) {
-            let force = Vector::new(-move_speed, 0.0);
+            let force = Vector::new(-move_speed, 0);
             paddle.apply_force(force);
         } else if matches!(key.code, anathema::component::KeyCode::Right) {
-            let force = Vector::new(move_speed, 0.0);
+            let force = Vector::new(move_speed, 0);
             paddle.apply_force(force);
         }
     }
@@ -241,8 +236,8 @@ impl Component for Game {
         };
         let mouse_position = mouse.pos();
 
-        paddle.velocity.x = 0.0;
-        paddle.position.x = mouse_position.x as f32 - paddle.size.x / 2.0;
+        paddle.velocity.x = 0;
+        paddle.position.x = mouse_position.x - paddle.size.x / 2;
     }
 }
 
@@ -250,7 +245,6 @@ impl Component for Game {
 pub struct GameEntities {
     ball: Option<Entity>,
     paddle: Option<Entity>,
-    speed: f32,
     bricks: Vec<Entity>,
 }
 

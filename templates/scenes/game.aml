@@ -3,10 +3,6 @@ vstack
 		expand [axis: "horz"]
 			hstack
 				text "Anathema Breakout"
-				text " width: "
-				text attributes.width
-				text " height: "
-				text attributes.height
 				spacer
 				text "lives: "
 				text state.lives
