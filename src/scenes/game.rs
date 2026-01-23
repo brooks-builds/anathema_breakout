@@ -46,6 +46,10 @@ impl Component for GameScene {
             } else {
                 state.lives.set(lives - 1);
             }
+        } else if event.name() == "scored" {
+            event.stop_propagation();
+            let score = event.data_checked::<u32>().copied().unwrap_or_default();
+            context.publish("scored", score);
         }
     }
 

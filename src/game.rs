@@ -78,6 +78,10 @@ impl Component for Game {
 
                     brick.health -= 1;
 
+                    if brick.health == 0 {
+                        context.publish("scored", brick.value);
+                    }
+
                     if previous_ball_position.x < brick.position.x {
                         ball.velocity.x *= -1;
                         ball.position.x = brick.position.x - 1;
@@ -107,13 +111,15 @@ impl Component for Game {
                 brick.draw(canvas);
             }
 
-            if !ball.is_alive {
+            self.0.bricks.retain(|brick| brick.health > 0);
+
+            if self.0.bricks.is_empty() && ball.is_alive {
+                state.playing.set(false);
+            } else if !ball.is_alive {
                 self.0.ball = None;
                 context.publish("lost_life", ());
                 state.playing.set(false);
             }
-
-            self.0.bricks.retain(|brick| brick.health > 0);
         });
     }
 
@@ -175,28 +181,30 @@ impl Component for Game {
             );
             self.0.paddle = Some(paddle);
 
-            let bricks_per_row = 12;
-            let brick_size = Vector::new(game_width / bricks_per_row, 1);
-            let brick_character = ' ';
-            for count in 0..bricks_per_row {
-                let position = Vector::new(count * brick_size.x, 0);
-                let (health, color) = random_brick();
-                let brick = Entity::new(position, brick_size, brick_character, color, health);
-                self.0.bricks.push(brick);
-            }
+            if self.0.bricks.is_empty() {
+                let bricks_per_row = 12;
+                let brick_size = Vector::new(game_width / bricks_per_row, 1);
+                let brick_character = ' ';
+                for count in 0..bricks_per_row {
+                    let position = Vector::new(count * brick_size.x, 0);
+                    let (health, color) = random_brick();
+                    let brick = Entity::new(position, brick_size, brick_character, color, health);
+                    self.0.bricks.push(brick);
+                }
 
-            for count in 0..bricks_per_row {
-                let position = Vector::new(count * brick_size.x, brick_size.y);
-                let (health, color) = random_brick();
-                let brick = Entity::new(position, brick_size, brick_character, color, health);
-                self.0.bricks.push(brick);
-            }
+                for count in 0..bricks_per_row {
+                    let position = Vector::new(count * brick_size.x, brick_size.y);
+                    let (health, color) = random_brick();
+                    let brick = Entity::new(position, brick_size, brick_character, color, health);
+                    self.0.bricks.push(brick);
+                }
 
-            for count in 0..bricks_per_row {
-                let position = Vector::new(count * brick_size.x, brick_size.y + 1);
-                let (health, color) = random_brick();
-                let brick = Entity::new(position, brick_size, brick_character, color, health);
-                self.0.bricks.push(brick);
+                for count in 0..bricks_per_row {
+                    let position = Vector::new(count * brick_size.x, brick_size.y + 1);
+                    let (health, color) = random_brick();
+                    let brick = Entity::new(position, brick_size, brick_character, color, health);
+                    self.0.bricks.push(brick);
+                }
             }
 
             state.playing.set(true);
@@ -248,15 +256,15 @@ pub struct GameEntities {
     bricks: Vec<Entity>,
 }
 
-fn random_brick() -> (u8, Color) {
+fn random_brick() -> (u32, Color) {
     let mut rng = rand::rng();
     let possible_colors = [
         (1, Color::Red),
-        (2, Color::Green),
-        (3, Color::Yellow),
-        (4, Color::Blue),
-        (5, Color::Magenta),
-        (6, Color::Cyan),
+        // (2, Color::Green),
+        // (3, Color::Yellow),
+        // (4, Color::Blue),
+        // (5, Color::Magenta),
+        // (6, Color::Cyan),
     ];
 
     possible_colors

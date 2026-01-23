@@ -12,4 +12,4 @@ vstack
 				text " "
 				text "high_score: "
 				text attributes.high_score
-	@game (lost_life->lost_life) [width: attributes.width, height: attributes.height - 2]
+	@game (lost_life->lost_life, scored->scored) [width: attributes.width, height: attributes.height - 2]

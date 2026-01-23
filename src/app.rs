@@ -38,6 +38,11 @@ impl Component for App {
             };
 
             state.scene.set(game_scene.into());
+        } else if event.name() == "scored" {
+            let points = event.data_checked::<u32>().copied().unwrap_or_default();
+            let score = *state.score.to_ref();
+
+            state.score.set(score + points);
         }
     }
 

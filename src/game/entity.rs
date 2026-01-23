@@ -10,7 +10,8 @@ pub struct Entity {
     pub velocity: Vector,
     pub is_alive: bool,
     pub bg_color: Color,
-    pub health: u8,
+    pub health: u32,
+    pub value: u32,
 }
 
 impl Entity {
@@ -19,7 +20,7 @@ impl Entity {
         size: Vector,
         character: char,
         bg_color: Color,
-        health: u8,
+        health: u32,
     ) -> Self {
         Self {
             position,
@@ -29,6 +30,7 @@ impl Entity {
             is_alive: true,
             bg_color,
             health,
+            value: health,
         }
     }
 
