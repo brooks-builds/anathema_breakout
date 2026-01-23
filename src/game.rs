@@ -38,7 +38,7 @@ pub struct GameState {
 impl Component for Game {
     type State = GameState;
 
-    type Message = ();
+    type Message = bool;
 
     fn on_tick(
         &mut self,
@@ -50,6 +50,10 @@ impl Component for Game {
         let game_width = *state.game_width.to_ref();
         let game_height = *state.game_height.to_ref();
         let game_size = Vector::new(game_width, game_height);
+        let automation_mode = context
+            .attribute("automation_mode")
+            .and_then(|v| v.as_bool())
+            .unwrap_or_default();
 
         children.elements().by_tag("canvas").first(|el, _| {
             let canvas = el.to::<Canvas>();
@@ -60,6 +64,25 @@ impl Component for Game {
             let Some(paddle) = &mut self.0.paddle else {
                 return;
             };
+
+            if automation_mode && ball.velocity.y > 0 && ball.position.y > 5 {
+                let mut simulated_ball = ball.clone();
+                while simulated_ball.position.y < paddle.position.y {
+                    simulated_ball.update(game_size);
+                }
+
+                if paddle.position.x > simulated_ball.position.x {
+                    paddle.position.x -= 2;
+                } else if paddle.position.x + paddle.size.x <= simulated_ball.position.x {
+                    paddle.position.x += 2;
+                } else {
+                    let simulated_ball_offset =
+                        simulated_ball.position.x - (paddle.position.x + paddle.size.x / 2);
+                    if simulated_ball_offset.abs() < 1 {
+                        paddle.position.x += 1;
+                    }
+                }
+            }
 
             ball.update(game_size);
             paddle.update(game_size);
@@ -167,7 +190,7 @@ impl Component for Game {
             ball.apply_force(ball_velocity);
             self.0.ball = Some(ball);
 
-            let paddle_size = Vector::new(7, 2);
+            let paddle_size = Vector::new(8, 2);
             let paddle_position = Vector::new(
                 game_width / 2 - paddle_size.x / 2,
                 game_height - paddle_size.y,
@@ -216,8 +239,16 @@ impl Component for Game {
         key: anathema::component::KeyEvent,
         _state: &mut Self::State,
         mut _children: anathema::component::Children<'_, '_>,
-        mut _context: anathema::component::Context<'_, '_, Self::State>,
+        context: anathema::component::Context<'_, '_, Self::State>,
     ) {
+        if context
+            .attribute("automation_mode")
+            .and_then(|v| v.as_bool())
+            .unwrap_or_default()
+        {
+            return;
+        }
+
         let Some(paddle) = &mut self.0.paddle else {
             return;
         };
@@ -237,12 +268,19 @@ impl Component for Game {
         mouse: anathema::component::MouseEvent,
         _state: &mut Self::State,
         mut _children: anathema::component::Children<'_, '_>,
-        mut _context: anathema::component::Context<'_, '_, Self::State>,
+        mut context: anathema::component::Context<'_, '_, Self::State>,
     ) {
         let Some(paddle) = &mut self.0.paddle else {
             return;
         };
         let mouse_position = mouse.pos();
+        if context
+            .attribute("automation_mode")
+            .and_then(|v| v.as_bool())
+            .unwrap_or_default()
+        {
+            return;
+        }
 
         paddle.velocity.x = 0;
         paddle.position.x = mouse_position.x - paddle.size.x / 2;

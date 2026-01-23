@@ -2,7 +2,7 @@ use anathema::{default_widgets::Canvas, state::Color, widgets::Style};
 
 use crate::game::vector::Vector;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Entity {
     pub position: Vector,
     pub size: Vector,

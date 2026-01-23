@@ -43,6 +43,10 @@ impl Component for App {
             let score = *state.score.to_ref();
 
             state.score.set(score + points);
+        } else if event.name() == "automation_mode_toggle" {
+            let automation_mode = *state.automation_mode.to_ref();
+
+            state.automation_mode.set(!automation_mode);
         }
     }
 
@@ -94,6 +98,7 @@ pub struct AppState {
     level: Value<u8>,
     width: Value<u16>,
     height: Value<u16>,
+    automation_mode: Value<bool>,
 }
 
 impl Default for AppState {
@@ -105,6 +110,7 @@ impl Default for AppState {
             level: Value::default(),
             width: Value::default(),
             height: Value::default(),
+            automation_mode: Value::default(),
         }
     }
 }

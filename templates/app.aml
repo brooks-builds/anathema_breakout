@@ -1,6 +1,6 @@
 if state.scene == "splash"
 	@splash_scene (change_scene->change_scene)
 else if state.scene == "game"
-	@game_scene (change_scene->change_scene, scored->scored) [level: state.level, high_score: state.high_score, score: state.score, width: state.width, height: state.height]
+	@game_scene (change_scene->change_scene, scored->scored, automation_mode_toggle->automation_mode_toggle) [level: state.level, high_score: state.high_score, score: state.score, width: state.width, height: state.height, automation_mode: state.automation_mode]
 else if state.scene == "end"
 	@end_scene (change_scene->change_scene) [score: state.score, high_score: state.high_score]

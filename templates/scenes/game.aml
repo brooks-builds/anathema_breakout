@@ -4,6 +4,11 @@ vstack
 			hstack
 				text "Anathema Breakout"
 				spacer
+				padding [right: 1]
+					if attributes.automation_mode
+						@BBButton (click->automation_mode_toggle) [label: "Disable Automation"]
+					else 
+						@BBButton (click->automation_mode_toggle) [label: "Enable Automation"]
 				text "lives: "
 				text state.lives
 				text " "
@@ -12,4 +17,7 @@ vstack
 				text " "
 				text "high_score: "
 				text attributes.high_score
-	@game (lost_life->lost_life, scored->scored) [width: attributes.width, height: attributes.height - 2]
+	if attributes.automation_mode
+		@game (lost_life->lost_life, scored->scored) [width: attributes.width, height: attributes.height - 2, automation_mode: attributes.automation_mode]
+	else 
+		@game (lost_life->lost_life, scored->scored) [width: attributes.width, height: attributes.height - 2]

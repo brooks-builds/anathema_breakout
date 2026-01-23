@@ -50,6 +50,9 @@ impl Component for GameScene {
             event.stop_propagation();
             let score = event.data_checked::<u32>().copied().unwrap_or_default();
             context.publish("scored", score);
+        } else if event.name() == "automation_mode_toggle" {
+            event.stop_propagation();
+            context.publish("automation_mode_toggle", ());
         }
     }
 
