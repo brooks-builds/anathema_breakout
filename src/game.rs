@@ -66,7 +66,7 @@ impl Component for Game {
             };
 
             if automation_mode && ball.velocity.y > 0 && ball.position.y > 5 {
-                let mut simulated_ball = ball.clone();
+                let mut simulated_ball = *ball;
                 while simulated_ball.position.y < paddle.position.y {
                     simulated_ball.update(game_size);
                 }
@@ -101,7 +101,7 @@ impl Component for Game {
 
                     brick.health -= 1;
 
-                    if brick.health == 0 {
+                    if brick.health == 0 && !automation_mode {
                         context.publish("scored", brick.value);
                     }
 
@@ -268,7 +268,7 @@ impl Component for Game {
         mouse: anathema::component::MouseEvent,
         _state: &mut Self::State,
         mut _children: anathema::component::Children<'_, '_>,
-        mut context: anathema::component::Context<'_, '_, Self::State>,
+        context: anathema::component::Context<'_, '_, Self::State>,
     ) {
         let Some(paddle) = &mut self.0.paddle else {
             return;
