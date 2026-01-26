@@ -1,6 +1,8 @@
 mod entity;
 mod vector;
 
+use std::ops::Rem;
+
 use crate::game::{entity::Entity, vector::Vector};
 use anathema::{
     component::Component,
@@ -90,7 +92,8 @@ impl Component for Game {
                 ball.position.y = paddle.position.y - 1;
                 ball.velocity.y *= -1;
                 // am I on the left, center, or right sides
-                let shifted_ball = ball.position.x - (paddle.position.x + (paddle.size.x / 2));
+                let shifted_ball =
+                    (ball.position.x - (paddle.position.x + (paddle.size.x / 2))).clamp(-3, 3);
                 ball.velocity.x = shifted_ball;
             }
 
@@ -137,10 +140,19 @@ impl Component for Game {
 
             if self.0.bricks.is_empty() && ball.is_alive {
                 state.playing.set(false);
+                self.0.ball = None;
+
+                if automation_mode {
+                    reset_game(&mut self.0, state);
+                }
             } else if !ball.is_alive {
                 self.0.ball = None;
                 context.publish("lost_life", ());
                 state.playing.set(false);
+
+                if automation_mode {
+                    reset_game(&mut self.0, state);
+                }
             }
         });
     }
@@ -174,65 +186,7 @@ impl Component for Game {
         mut _context: anathema::component::Context<'_, '_, Self::State>,
     ) {
         if event.name() == "begin" {
-            let game_width = *state.game_width.to_ref();
-            let game_height = *state.game_height.to_ref();
-            let ball_position = Vector::new(game_width / 2, game_height / 2);
-            let ball_velocity = Vector::new(0, 1);
-            let ball_size = Vector::new(1, 1);
-            let mut ball = Entity::new(
-                ball_position,
-                ball_size,
-                '*',
-                anathema::state::Color::Reset,
-                1,
-            );
-            ball.apply_force(ball_velocity);
-            self.0.ball = Some(ball);
-
-            let paddle_size = Vector::new(8, 2);
-            let paddle_position = Vector::new(
-                game_width / 2 - paddle_size.x / 2,
-                game_height - paddle_size.y,
-            );
-            let paddle = Entity::new(
-                paddle_position,
-                paddle_size,
-                '=',
-                anathema::state::Color::Reset,
-                1,
-            );
-            self.0.paddle = Some(paddle);
-
-            if self.0.bricks.is_empty() {
-                let bricks_per_row = 12;
-                let brick_size = Vector::new(game_width / bricks_per_row, 1);
-                let brick_character = ' ';
-                for count in 0..bricks_per_row {
-                    let position = Vector::new(count * brick_size.x, 0);
-                    let health = 1;
-                    let color = Color::Red;
-                    let brick = Entity::new(position, brick_size, brick_character, color, health);
-                    self.0.bricks.push(brick);
-                }
-
-                for count in 0..bricks_per_row {
-                    let position = Vector::new(count * brick_size.x, brick_size.y);
-                    let health = 1;
-                    let color = Color::Magenta;
-                    let brick = Entity::new(position, brick_size, brick_character, color, health);
-                    self.0.bricks.push(brick);
-                }
-
-                for count in 0..bricks_per_row {
-                    let position = Vector::new(count * brick_size.x, brick_size.y + 1);
-                    let health = 3;
-                    let color = Color::Cyan;
-                    let brick = Entity::new(position, brick_size, brick_character, color, health);
-                    self.0.bricks.push(brick);
-                }
-            }
-
-            state.playing.set(true);
+            reset_game(&mut self.0, state);
         }
     }
 
@@ -294,4 +248,77 @@ pub struct GameEntities {
     ball: Option<Entity>,
     paddle: Option<Entity>,
     bricks: Vec<Entity>,
+}
+
+fn reset_game(game_entities: &mut GameEntities, state: &mut GameState) {
+    let game_width = *state.game_width.to_ref();
+    let game_height = *state.game_height.to_ref();
+    let ball_position = Vector::new(game_width / 2, game_height / 2);
+    let ball_velocity = Vector::new(0, 1);
+    let ball_size = Vector::new(1, 1);
+    let mut ball = Entity::new(
+        ball_position,
+        ball_size,
+        '*',
+        anathema::state::Color::Reset,
+        1,
+    );
+    ball.apply_force(ball_velocity);
+    game_entities.ball = Some(ball);
+
+    let paddle_size = Vector::new(20, 2);
+    let paddle_position = Vector::new(
+        game_width / 2 - paddle_size.x / 2,
+        game_height - paddle_size.y,
+    );
+    let paddle = Entity::new(
+        paddle_position,
+        paddle_size,
+        '=',
+        anathema::state::Color::Reset,
+        1,
+    );
+    game_entities.paddle = Some(paddle);
+
+    if game_entities.bricks.is_empty() {
+        let brick_size = Vector::new(calculate_brick_size(game_width), 1);
+        let bricks_per_row = game_width / brick_size.x;
+        let brick_character = ' ';
+        for count in 0..bricks_per_row {
+            let position = Vector::new(count * brick_size.x, 0);
+            let health = 1;
+            let color = Color::Red;
+            let brick = Entity::new(position, brick_size, brick_character, color, health);
+            game_entities.bricks.push(brick);
+        }
+
+        for count in 0..bricks_per_row {
+            let position = Vector::new(count * brick_size.x, brick_size.y);
+            let health = 1;
+            let color = Color::Magenta;
+            let brick = Entity::new(position, brick_size, brick_character, color, health);
+            game_entities.bricks.push(brick);
+        }
+
+        for count in 0..bricks_per_row {
+            let position = Vector::new(count * brick_size.x, brick_size.y + 1);
+            let health = 3;
+            let color = Color::Cyan;
+            let brick = Entity::new(position, brick_size, brick_character, color, health);
+            game_entities.bricks.push(brick);
+        }
+    }
+
+    state.playing.set(true);
+}
+
+fn calculate_brick_size(game_width: i32) -> i32 {
+    let mut brick_width = 12;
+
+    loop {
+        if game_width.rem(brick_width) == 0 {
+            return brick_width;
+        }
+        brick_width -= 1;
+    }
 }
