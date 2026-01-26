@@ -8,9 +8,6 @@ vstack
 		spacer
 	hstack
 		spacer
-		hstack
-			text "High Score: "
-			text attributes.high_score
 		spacer
 	padding [top: 2]
 		hstack

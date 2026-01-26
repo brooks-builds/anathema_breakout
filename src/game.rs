@@ -8,7 +8,6 @@ use anathema::{
     state::{Color, State, Value},
 };
 use bb_anathema_components::BBAppComponent;
-use rand::seq::IndexedRandom;
 
 #[derive(Debug, Default)]
 pub struct Game(GameEntities);
@@ -65,7 +64,7 @@ impl Component for Game {
                 return;
             };
 
-            if automation_mode && ball.velocity.y > 0 && ball.position.y > 5 {
+            if automation_mode {
                 let mut simulated_ball = *ball;
                 while simulated_ball.position.y < paddle.position.y {
                     simulated_ball.update(game_size);
@@ -99,7 +98,7 @@ impl Component for Game {
                 if brick.is_point_inside(&ball.position) {
                     let previous_ball_position = ball.previous_location();
 
-                    brick.health -= 1;
+                    brick.lose_health();
 
                     if brick.health == 0 && !automation_mode {
                         context.publish("scored", brick.value);
@@ -210,21 +209,24 @@ impl Component for Game {
                 let brick_character = ' ';
                 for count in 0..bricks_per_row {
                     let position = Vector::new(count * brick_size.x, 0);
-                    let (health, color) = random_brick();
+                    let health = 1;
+                    let color = Color::Red;
                     let brick = Entity::new(position, brick_size, brick_character, color, health);
                     self.0.bricks.push(brick);
                 }
 
                 for count in 0..bricks_per_row {
                     let position = Vector::new(count * brick_size.x, brick_size.y);
-                    let (health, color) = random_brick();
+                    let health = 1;
+                    let color = Color::Magenta;
                     let brick = Entity::new(position, brick_size, brick_character, color, health);
                     self.0.bricks.push(brick);
                 }
 
                 for count in 0..bricks_per_row {
                     let position = Vector::new(count * brick_size.x, brick_size.y + 1);
-                    let (health, color) = random_brick();
+                    let health = 3;
+                    let color = Color::Cyan;
                     let brick = Entity::new(position, brick_size, brick_character, color, health);
                     self.0.bricks.push(brick);
                 }
@@ -292,21 +294,4 @@ pub struct GameEntities {
     ball: Option<Entity>,
     paddle: Option<Entity>,
     bricks: Vec<Entity>,
-}
-
-fn random_brick() -> (u32, Color) {
-    let mut rng = rand::rng();
-    let possible_colors = [
-        (1, Color::Red),
-        // (2, Color::Green),
-        // (3, Color::Yellow),
-        // (4, Color::Blue),
-        // (5, Color::Magenta),
-        // (6, Color::Cyan),
-    ];
-
-    possible_colors
-        .choose(&mut rng)
-        .copied()
-        .expect("we have a color")
 }

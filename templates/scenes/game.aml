@@ -15,8 +15,6 @@ vstack
 				text "score: "
 				text attributes.score
 				text " "
-				text "high_score: "
-				text attributes.high_score
 	if attributes.automation_mode
 		@game (lost_life->lost_life, scored->scored) [width: attributes.width, height: attributes.height - 2, automation_mode: attributes.automation_mode]
 	else 

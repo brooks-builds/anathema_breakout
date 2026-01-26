@@ -94,7 +94,6 @@ impl From<CurrentGameScene> for String {
 pub struct AppState {
     scene: Value<String>,
     score: Value<u32>,
-    high_score: Value<u32>,
     level: Value<u8>,
     width: Value<u16>,
     height: Value<u16>,
@@ -106,7 +105,6 @@ impl Default for AppState {
         Self {
             scene: Value::new(CurrentGameScene::Splash.into()),
             score: Value::default(),
-            high_score: Value::default(),
             level: Value::default(),
             width: Value::default(),
             height: Value::default(),

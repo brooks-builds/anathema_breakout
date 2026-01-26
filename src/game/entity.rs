@@ -10,8 +10,9 @@ pub struct Entity {
     pub velocity: Vector,
     pub is_alive: bool,
     pub bg_color: Color,
-    pub health: u32,
-    pub value: u32,
+    pub health: usize,
+    pub original_health: usize,
+    pub value: usize,
 }
 
 impl Entity {
@@ -20,7 +21,7 @@ impl Entity {
         size: Vector,
         character: char,
         bg_color: Color,
-        health: u32,
+        health: usize,
     ) -> Self {
         Self {
             position,
@@ -30,19 +31,27 @@ impl Entity {
             is_alive: true,
             bg_color,
             health,
+            original_health: health,
             value: health,
         }
     }
 
     pub fn draw(&self, canvas: &mut Canvas) {
         let mut style = Style::new();
+        let lost_health_character = [self.character, '/', '\\', '#'];
+        let damage = self.original_health - self.health;
+        let character = lost_health_character[damage];
 
         style.set_bg(self.bg_color);
+
+        if damage > 0 {
+            style.set_fg(Color::Black);
+        }
 
         for row in 0..self.size.x {
             for col in 0..self.size.y {
                 canvas.put(
-                    self.character,
+                    character,
                     style,
                     (row + self.position.x, col + self.position.y),
                 );
@@ -87,5 +96,9 @@ impl Entity {
 
     pub fn previous_location(&self) -> Vector {
         self.position - self.velocity
+    }
+
+    pub fn lose_health(&mut self) {
+        self.health -= 1;
     }
 }
