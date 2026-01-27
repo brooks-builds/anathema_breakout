@@ -93,10 +93,14 @@ impl Component for Game {
                 ball.position.y = paddle.position.y - 1;
                 ball.velocity.y *= -1;
                 // am I on the left, center, or right sides
-                let shifted_ball =
+                let mut shifted_ball =
                     (ball.position.x - (paddle.position.x + (paddle.size.x / 2))).clamp(-3, 3);
-                let random_x = self.0.rng.random_range(shifted_ball - 1..shifted_ball + 1);
-                ball.velocity.x = random_x;
+
+                if automation_mode {
+                    shifted_ball = self.0.rng.random_range(shifted_ball - 1..shifted_ball + 1);
+                }
+
+                ball.velocity.x = shifted_ball;
             }
 
             for brick in self.0.bricks.iter_mut() {
