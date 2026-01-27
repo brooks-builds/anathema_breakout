@@ -10,6 +10,7 @@ use anathema::{
     state::{Color, State, Value},
 };
 use bb_anathema_components::BBAppComponent;
+use rand::{Rng, rngs::ThreadRng};
 
 #[derive(Debug, Default)]
 pub struct Game(GameEntities);
@@ -94,7 +95,8 @@ impl Component for Game {
                 // am I on the left, center, or right sides
                 let shifted_ball =
                     (ball.position.x - (paddle.position.x + (paddle.size.x / 2))).clamp(-3, 3);
-                ball.velocity.x = shifted_ball;
+                let random_x = self.0.rng.random_range(shifted_ball - 1..shifted_ball + 1);
+                ball.velocity.x = random_x;
             }
 
             for brick in self.0.bricks.iter_mut() {
@@ -248,6 +250,7 @@ pub struct GameEntities {
     ball: Option<Entity>,
     paddle: Option<Entity>,
     bricks: Vec<Entity>,
+    rng: ThreadRng,
 }
 
 fn reset_game(game_entities: &mut GameEntities, state: &mut GameState) {
