@@ -273,7 +273,7 @@ fn reset_game(game_entities: &mut GameEntities, state: &mut GameState) {
     ball.apply_force(ball_velocity);
     game_entities.ball = Some(ball);
 
-    let paddle_size = Vector::new(20, 2);
+    let paddle_size = Vector::new(10, 2);
     let paddle_position = Vector::new(
         game_width / 2 - paddle_size.x / 2,
         game_height - paddle_size.y,
