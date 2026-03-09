@@ -38,7 +38,7 @@ impl Entity {
 
     pub fn draw(&self, canvas: &mut Canvas) {
         let mut style = Style::new();
-        let lost_health_character = [self.character, 'X', '\\', '#'];
+        let lost_health_character = [self.character, '/', 'X', '#'];
         let damage = self.original_health - self.health;
         let character = lost_health_character[damage];
 
